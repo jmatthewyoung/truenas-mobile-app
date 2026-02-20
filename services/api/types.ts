@@ -4,6 +4,7 @@ export interface SystemInfo {
   platform: string;
   uptime: string;
   uptime_seconds: number;
+  cpuModel: string;
 }
 
 // Real-time reporting types from websocket
@@ -23,6 +24,40 @@ export interface CpuCore {
 
 export interface CpuData {
   [coreId: string]: CpuCore | Record<string, number> | undefined;
+}
+
+export interface NetworkInterface {
+  id: string;
+  name: string;
+  state: {
+    link_state: string;
+    active_media_type?: string;
+    active_media_subtype?: string;
+  };
+  aliases: Array<{
+    type: string;
+    address: string;
+    netmask?: number;
+    broadcast?: string;
+  }>;
+}
+
+export interface Pool {
+  id: number;
+  name: string;
+  status: 'ONLINE' | 'OFFLINE' | 'DEGRADED' | 'FAULTED';
+  size: number | null;
+  allocated: number | null;
+  free: number | null;
+  healthy: boolean;
+  scan: {
+    state: string;
+    end_time: { $date: number } | null;
+    errors: number;
+  } | null;
+  topology: {
+    data: Array<{ disk: string }>;
+  };
 }
 
 export interface RealtimeStats {

@@ -30,5 +30,6 @@ export async function getSystemInfo(
     platform: data.system_product || 'TrueNAS',
     uptime: data.uptime || 'Unknown',
     uptime_seconds: data.uptime_seconds || 0,
+    cpuModel: data.cpu_model || 'Unknown',
   };
 }
