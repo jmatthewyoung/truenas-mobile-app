@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Server, detectSupportedVersion } from '@/types/server';
 
 const STORAGE_KEY = '@truenas/servers';
+const SELECTED_SERVER_KEY = '@truenas/selectedServerId';
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -42,4 +43,31 @@ export async function deleteServer(id: string): Promise<void> {
   const servers = await getServers();
   const updated = servers.filter((s) => s.id !== id);
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+  // Clear selection if deleted server was selected
+  const selectedId = await getSelectedServerId();
+  if (selectedId === id) {
+    await clearSelectedServerId();
+  }
+}
+
+export async function getServerById(id: string): Promise<Server | null> {
+  const servers = await getServers();
+  return servers.find((s) => s.id === id) ?? null;
+}
+
+export async function getSelectedServerId(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(SELECTED_SERVER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export async function setSelectedServerId(id: string): Promise<void> {
+  await AsyncStorage.setItem(SELECTED_SERVER_KEY, id);
+}
+
+export async function clearSelectedServerId(): Promise<void> {
+  await AsyncStorage.removeItem(SELECTED_SERVER_KEY);
 }

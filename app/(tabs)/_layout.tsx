@@ -1,12 +1,21 @@
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
+import { TouchableOpacity } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
+import { clearSelectedServerId } from '@/storage/servers';
 
 const colors = Colors.dark;
 
 export default function TabLayout() {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await clearSelectedServerId();
+    router.replace('/');
+  };
+
   return (
     <Tabs
       screenOptions={{
@@ -21,6 +30,15 @@ export default function TabLayout() {
         },
         headerTintColor: colors.text,
         tabBarButton: HapticTab,
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => { void handleLogout(); }}
+            style={{ marginLeft: 16 }}
+            activeOpacity={0.7}
+          >
+            <IconSymbol name="arrow.left.square" size={24} color={colors.text} />
+          </TouchableOpacity>
+        ),
       }}
     >
       <Tabs.Screen

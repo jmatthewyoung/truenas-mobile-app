@@ -9,6 +9,10 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="index" options={{ title: 'Login' }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="add-server-modal"
+          options={{ presentation: 'modal', title: 'Add Server' }}
+        />
       </Stack>
       <StatusBar style="light" />
     </ThemeProvider>

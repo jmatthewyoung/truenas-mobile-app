@@ -19,6 +19,8 @@ const MAPPING = {
   'square.grid.2x2.fill': 'apps',
   'gearshape.fill': 'settings',
   'chevron.right': 'chevron-right',
+  'plus': 'add',
+  'arrow.left.square': 'logout',
 } as IconMapping;
 
 /**
