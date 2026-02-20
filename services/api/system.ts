@@ -1,17 +1,23 @@
 import { SystemInfo } from './types';
 
-export async function getSystemInfo(baseUrl: string, token: string): Promise<SystemInfo> {
+export async function getSystemInfo(
+  baseUrl: string,
+  username: string,
+  password: string
+): Promise<SystemInfo> {
+  const credentials = btoa(`${username}:${password}`);
+
   const response = await fetch(`${baseUrl}/api/v2.0/system/info`, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${token}`,
+      'Authorization': `Basic ${credentials}`,
       'Content-Type': 'application/json',
     },
   });
 
   if (!response.ok) {
     if (response.status === 401) {
-      throw new Error('Token expired or invalid');
+      throw new Error('Invalid credentials');
     }
     throw new Error(`Failed to fetch system info: ${response.status}`);
   }

@@ -6,11 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PlaceholderPane } from '@/components/dashboard/PlaceholderPane';
 import { SystemInfoPane } from '@/components/dashboard/SystemInfoPane';
 import { Colors } from '@/constants/theme';
-import { generateToken } from '@/services/api/auth';
 import { getSystemInfo } from '@/services/api/system';
 import { SystemInfo } from '@/services/api/types';
-import { clearAuthToken, getAuthToken, setAuthToken } from '@/storage/auth';
-import { Server, TrueNASVersion } from '@/types/server';
 
 const colors = Colors.dark;
 
@@ -35,57 +32,23 @@ export default function DashboardScreen() {
   }, []);
 
   async function loadDashboard() {
-    if (!params.id || !params.protocol || !params.host || !params.username || !params.password) {
+    if (!params.protocol || !params.host || !params.username || !params.password) {
       router.replace('/');
       return;
     }
 
-    const server: Server = {
-      id: params.id,
-      protocol: params.protocol as 'http://' | 'https://',
-      host: params.host,
-      username: params.username,
-      password: params.password,
-      version: (params.version || '24.10.2.3') as TrueNASVersion,
-    };
-
-    const baseUrl = `${server.protocol}${server.host}`;
+    const baseUrl = `${params.protocol}${params.host}`;
 
     try {
       setIsLoading(true);
       setError(null);
 
-      // Check for existing token
-      let token = await getAuthToken(server.id);
-
-      // If no token, generate one
-      if (!token) {
-        token = await generateToken(server);
-        await setAuthToken(server.id, token);
-      }
-
-      // Fetch system info
-      try {
-        const info = await getSystemInfo(baseUrl, token);
-        setSystemInfo(info);
-      } catch (err) {
-        // If token is invalid, try regenerating
-        if (err instanceof Error && err.message.includes('401')) {
-          await clearAuthToken(server.id);
-          token = await generateToken(server);
-          await setAuthToken(server.id, token);
-          const info = await getSystemInfo(baseUrl, token);
-          setSystemInfo(info);
-        } else {
-          throw err;
-        }
-      }
+      const info = await getSystemInfo(baseUrl, params.username, params.password);
+      setSystemInfo(info);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'An error occurred';
 
-      // If auth failed completely, redirect to login
-      if (message.includes('Invalid credentials') || message.includes('401')) {
-        await clearAuthToken(params.id);
+      if (message.includes('Invalid credentials')) {
         router.replace('/');
         return;
       }

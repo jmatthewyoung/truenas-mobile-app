@@ -5,7 +5,3 @@ export interface SystemInfo {
   uptime: string;
   uptime_seconds: number;
 }
-
-export interface AuthTokenResponse {
-  token: string;
-}
