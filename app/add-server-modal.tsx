@@ -11,7 +11,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { getSystemInfo } from '@/services/api/system';
 import { addServer } from '@/storage/servers';
@@ -78,16 +80,29 @@ export default function AddServerModal() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <KeyboardAvoidingView
         style={styles.flex}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        {/* Back button */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <IconSymbol name="chevron.left" size={24} color={colors.tint} />
+            <Text style={[styles.backText, { color: colors.tint }]}>Back</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {/* Protocol + Host row */}
           <View style={styles.protocolRow}>
             <TouchableOpacity
@@ -180,8 +195,9 @@ export default function AddServerModal() {
             {isSubmitting ? 'Adding...' : 'Add Server'}
           </Text>
         </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -192,9 +208,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingRight: 8,
+  },
+  backText: {
+    fontSize: 17,
+    marginLeft: 2,
+  },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 8,
     paddingBottom: 40,
   },
   formCard: {

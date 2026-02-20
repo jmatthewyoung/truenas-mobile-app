@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -22,6 +23,8 @@ import {
 import { Server } from '@/types/server';
 
 const colors = Colors.dark;
+
+const logo = require('../assets/images/truenas-logo.png');
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -122,6 +125,12 @@ export default function LoginScreen() {
     return (
       <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
         <View style={styles.centered}>
+          {/* Logo */}
+          <Image source={logo} style={styles.logo} resizeMode="contain" />
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            Companion Mobile App
+          </Text>
+
           <TouchableOpacity style={styles.emptyStateButton} onPress={handleAddServer} activeOpacity={0.7}>
             <View style={[styles.largePlusCircle, { borderColor: colors.tint }]}>
               <IconSymbol name="plus" size={48} color={colors.tint} />
@@ -137,21 +146,31 @@ export default function LoginScreen() {
 
   // Server list view
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['bottom']}>
-      <View style={styles.container}>
-        {/* Add button in top right */}
-        <View style={styles.topBar}>
-          <TouchableOpacity
-            style={[styles.smallAddButton, { backgroundColor: colors.tint }]}
-            onPress={handleAddServer}
-            activeOpacity={0.7}
-          >
-            <IconSymbol name="plus" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <View style={styles.centered}>
+        {/* Logo */}
+        <Image source={logo} style={styles.logo} resizeMode="contain" />
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          Companion Mobile App
+        </Text>
 
-        {/* Centered server list */}
-        <View style={styles.listContainer}>
+        {/* Server list section */}
+        <View style={styles.listSection}>
+          {/* List header with add button */}
+          <View style={styles.listHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+              SERVERS
+            </Text>
+            <TouchableOpacity
+              style={[styles.smallAddButton, { backgroundColor: colors.tint }]}
+              onPress={handleAddServer}
+              activeOpacity={0.7}
+            >
+              <IconSymbol name="plus" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Server cards */}
           {servers.map((server) => (
             <TouchableOpacity
               key={server.id}
@@ -190,25 +209,38 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  container: {
-    flex: 1,
     paddingHorizontal: 16,
   },
-  topBar: {
+  logo: {
+    width: 280,
+    height: 84,
+    marginBottom: 12,
+  },
+  subtitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    marginBottom: 32,
+  },
+  listSection: {
+    width: '100%',
+  },
+  listHeader: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    marginLeft: 4,
   },
   smallAddButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  listContainer: {
-    flex: 1,
     justifyContent: 'center',
   },
   emptyStateButton: {

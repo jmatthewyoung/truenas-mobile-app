@@ -7,11 +7,11 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={DarkTheme}>
       <Stack>
-        <Stack.Screen name="index" options={{ title: 'Login' }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="add-server-modal"
-          options={{ presentation: 'modal', title: 'Add Server' }}
+          options={{ presentation: 'modal', headerShown: false }}
         />
       </Stack>
       <StatusBar style="light" />
