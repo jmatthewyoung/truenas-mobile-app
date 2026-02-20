@@ -68,6 +68,21 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 
 `referencedocs/` contains the TrueNAS Scale 24.10.2.3 API reference documentation. Consult these when implementing API calls to understand available endpoints, request/response shapes, and authentication requirements.
 
+## Version-Based API Services
+
+The app supports multiple TrueNAS Scale versions. Currently supported: **24.10.2.3**
+
+### Architecture Pattern
+When implementing features that use the TrueNAS API:
+
+1. **Start version-agnostic**: Put initial implementation in a shared service (e.g., `services/api/system.ts`)
+2. **Version-specific when needed**: If a future version requires different API handling, create version-specific implementations:
+   - `services/api/v24.10/system.ts` - Version-specific code
+   - `services/api/system.ts` - Shared/common code or version router
+3. **Server version is stored**: Each saved server has a `version` field that should be used to determine which API service implementation to call
+
+This pattern allows us to support new TrueNAS versions without breaking compatibility with older ones. The version selection happens at server add time and is passed to the home screen and beyond.
+
 ## Configuration Notes
 
 - New Architecture (Fabric) is enabled
