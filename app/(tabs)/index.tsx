@@ -3,9 +3,11 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CpuUsagePane } from '@/components/dashboard/CpuUsagePane';
 import { PlaceholderPane } from '@/components/dashboard/PlaceholderPane';
 import { SystemInfoPane } from '@/components/dashboard/SystemInfoPane';
 import { Colors } from '@/constants/theme';
+import { useRealtimeStats } from '@/hooks/use-realtime-stats';
 import { getSystemInfo } from '@/services/api/system';
 import { SystemInfo } from '@/services/api/types';
 
@@ -26,18 +28,26 @@ export default function DashboardScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const baseUrl = params.protocol && params.host
+    ? `${params.protocol}${params.host}`
+    : undefined;
+
+  const { stats: realtimeStats } = useRealtimeStats(
+    baseUrl,
+    params.username,
+    params.password
+  );
+
   useEffect(() => {
     void loadDashboard();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadDashboard() {
-    if (!params.protocol || !params.host || !params.username || !params.password) {
+    if (!baseUrl || !params.username || !params.password) {
       router.replace('/');
       return;
     }
-
-    const baseUrl = `${params.protocol}${params.host}`;
 
     try {
       setIsLoading(true);
@@ -73,7 +83,10 @@ export default function DashboardScreen() {
           error={error}
         />
 
-        <PlaceholderPane title="CPU Usage" />
+        <CpuUsagePane
+          data={realtimeStats?.cpu}
+          isLoading={!realtimeStats}
+        />
         <PlaceholderPane title="Memory Usage" />
         <PlaceholderPane title="Network" />
       </ScrollView>
