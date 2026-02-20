@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { Server } from '@/types/server';
+import { Server, detectSupportedVersion } from '@/types/server';
 
 const STORAGE_KEY = '@truenas/servers';
 
@@ -12,7 +12,19 @@ export async function getServers(): Promise<Server[]> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (raw === null) return [];
-    return JSON.parse(raw) as Server[];
+    const servers = JSON.parse(raw) as Server[];
+
+    // Migrate old servers that don't have the new version fields
+    return servers.map((server) => {
+      if (server.detectedPattern === undefined) {
+        // Old format - version was the pattern, now we need both fields
+        return {
+          ...server,
+          detectedPattern: detectSupportedVersion(server.version),
+        };
+      }
+      return server;
+    });
   } catch {
     return [];
   }

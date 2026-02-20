@@ -15,8 +15,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
+import { getSystemInfo } from '@/services/api/system';
 import { addServer, deleteServer, getServers } from '@/storage/servers';
-import { Server, SUPPORTED_VERSIONS, TrueNASVersion } from '@/types/server';
+import { Server, detectSupportedVersion } from '@/types/server';
 
 // Login screen always uses the dark TrueNAS navy palette
 const colors = Colors.dark;
@@ -31,7 +32,6 @@ export default function LoginScreen() {
   const [host, setHost] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [version, setVersion] = useState<TrueNASVersion>(SUPPORTED_VERSIONS[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -77,20 +77,50 @@ export default function LoginScreen() {
       return;
     }
     setIsSubmitting(true);
+
+    const baseUrl = `${protocol}${host.trim()}`;
+    const trimmedUsername = username.trim();
+
     try {
-      const newServer = await addServer({
-        protocol,
-        host: host.trim(),
-        username: username.trim(),
-        password,
-        version,
-      });
-      setServers((prev) => [...prev, newServer]);
-      setHost('');
-      setUsername('');
-      setPassword('');
-      setProtocol('https://');
-      setVersion(SUPPORTED_VERSIONS[0]);
+      // Verify credentials and get version from server
+      const systemInfo = await getSystemInfo(baseUrl, trimmedUsername, password);
+      const detectedPattern = detectSupportedVersion(systemInfo.version);
+
+      const saveServer = async () => {
+        const newServer = await addServer({
+          protocol,
+          host: host.trim(),
+          username: trimmedUsername,
+          password,
+          version: systemInfo.version,
+          detectedPattern,
+        });
+        setServers((prev) => [...prev, newServer]);
+        setHost('');
+        setUsername('');
+        setPassword('');
+        setProtocol('https://');
+      };
+
+      if (!detectedPattern) {
+        // Unsupported version - show warning but allow proceeding
+        Alert.alert(
+          'Unsupported Version',
+          `This server is running TrueNAS ${systemInfo.version}, which is not officially supported. You may experience issues or missing features.\n\nDo you want to add it anyway?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Add Anyway',
+              onPress: () => { void saveServer(); },
+            },
+          ]
+        );
+      } else {
+        await saveServer();
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Connection failed';
+      Alert.alert('Connection Failed', message);
     } finally {
       setIsSubmitting(false);
     }
@@ -239,38 +269,6 @@ export default function LoginScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
               />
-
-              <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-              {/* Version selector */}
-              <View style={styles.versionRow}>
-                <Text style={[styles.versionLabel, { color: colors.textSecondary }]}>
-                  TrueNAS Version
-                </Text>
-                <View style={styles.versionButtons}>
-                  {SUPPORTED_VERSIONS.map((v) => (
-                    <TouchableOpacity
-                      key={v}
-                      style={[
-                        styles.versionBtn,
-                        { borderColor: colors.border },
-                        version === v && { backgroundColor: colors.tint, borderColor: colors.tint },
-                      ]}
-                      onPress={() => setVersion(v)}
-                    >
-                      <Text
-                        style={[
-                          styles.versionBtnText,
-                          { color: colors.textSecondary },
-                          version === v && styles.versionBtnTextActive,
-                        ]}
-                      >
-                        {v}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
             </View>
 
             <TouchableOpacity
@@ -408,33 +406,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     paddingHorizontal: 12,
     paddingVertical: 14,
-  },
-  versionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  versionLabel: {
-    fontSize: 15,
-  },
-  versionButtons: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  versionBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  versionBtnText: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  versionBtnTextActive: {
-    color: '#FFFFFF',
   },
   addButton: {
     borderRadius: 10,
