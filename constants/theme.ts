@@ -17,15 +17,16 @@ export const Colors = {
     tabIconSelected: tint,
   },
   dark: {
-    text: '#F5F5F5',
-    textSecondary: '#9BA1A6',
-    background: '#1A1A1A',
+    // Navy palette extracted from TrueNAS Scale dashboard screenshot
+    text: '#E8EDF2',
+    textSecondary: '#7A8EA8',
+    background: '#0D1520',  // deep navy page background
     tint,
-    icon: '#9BA1A6',
-    card: '#2A2A2A',
-    border: '#444444',
-    danger: '#FF6B6B',
-    tabIconDefault: '#9BA1A6',
+    icon: '#7A8EA8',
+    card: '#16202E',        // slightly lighter navy for cards/panels
+    border: '#253347',      // subtle navy border
+    danger: '#E05252',
+    tabIconDefault: '#7A8EA8',
     tabIconSelected: tint,
   },
 };

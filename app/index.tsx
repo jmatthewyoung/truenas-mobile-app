@@ -15,13 +15,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { addServer, deleteServer, getServers } from '@/storage/servers';
 import { Server } from '@/types/server';
 
+// Login screen always uses the dark TrueNAS navy palette
+const colors = Colors.dark;
+
 export default function LoginScreen() {
-  const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme];
   const router = useRouter();
 
   const [servers, setServers] = useState<Server[]>([]);
