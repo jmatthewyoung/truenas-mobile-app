@@ -43,7 +43,7 @@ export default function LoginScreen() {
 
   const handleSelectServer = (server: Server) => {
     router.push({
-      pathname: '/home',
+      pathname: '/(tabs)',
       params: {
         id: server.id,
         protocol: server.protocol,
