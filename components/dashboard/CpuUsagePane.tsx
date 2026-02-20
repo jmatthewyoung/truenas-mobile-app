@@ -43,8 +43,8 @@ export function CpuUsagePane({ data, isLoading }: CpuUsagePaneProps) {
 
     const coreList: CoreUsage[] = [];
     for (const [key, value] of Object.entries(data)) {
-      // Skip temperature entries
-      if (key === 'temperature' || key === 'temperature_celsius') continue;
+      // Skip temperature and average entries (average is shown separately at top)
+      if (key === 'temperature' || key === 'temperature_celsius' || key === 'average') continue;
 
       // Check if this is a core entry (numeric key or starts with 'cpu')
       if (isCpuCore(value)) {
@@ -64,10 +64,15 @@ export function CpuUsagePane({ data, isLoading }: CpuUsagePaneProps) {
   }, [data]);
 
   const avgUsage = useMemo(() => {
+    // Use API-provided average if available
+    if (data?.average && isCpuCore(data.average)) {
+      return calculateUsage(data.average);
+    }
+    // Fallback to calculating from cores
     if (cores.length === 0) return 0;
     const total = cores.reduce((sum, core) => sum + core.usage, 0);
     return total / cores.length;
-  }, [cores]);
+  }, [data, cores]);
 
   if (isLoading && !data) {
     return (
