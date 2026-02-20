@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 
 import { DashboardCard } from './DashboardCard';
@@ -11,6 +11,7 @@ const colors = Colors.dark;
 interface CpuGaugePaneProps {
   data: CpuData | null | undefined;
   isLoading: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
 function isCpuCore(value: unknown): value is CpuCore {
@@ -31,7 +32,7 @@ function calculateUsage(core: CpuCore): number {
   return 0;
 }
 
-export function CpuGaugePane({ data, isLoading }: CpuGaugePaneProps) {
+export function CpuGaugePane({ data, isLoading, style }: CpuGaugePaneProps) {
   const avgUsage = useMemo(() => {
     if (!data) return 0;
 
@@ -55,7 +56,7 @@ export function CpuGaugePane({ data, isLoading }: CpuGaugePaneProps) {
 
   if (isLoading && !data) {
     return (
-      <DashboardCard title="CPU Usage">
+      <DashboardCard title="CPU Usage" style={style}>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Connecting...</Text>
         </View>
@@ -64,7 +65,7 @@ export function CpuGaugePane({ data, isLoading }: CpuGaugePaneProps) {
   }
 
   return (
-    <DashboardCard title="CPU Usage">
+    <DashboardCard title="CPU Usage" style={style}>
       <View style={styles.container}>
         <View style={styles.gaugeContainer}>
           <CircularGauge percentage={avgUsage} size={120} strokeWidth={12} />

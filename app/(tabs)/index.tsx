@@ -105,12 +105,14 @@ export default function DashboardScreen() {
             <CpuGaugePane
               data={realtimeStats?.cpu}
               isLoading={!realtimeStats}
+              style={styles.rowCard}
             />
           </View>
           <View style={styles.halfWidth}>
             <CpuModelPane
               cpuModel={systemInfo?.cpuModel}
               isLoading={isLoading}
+              style={styles.rowCard}
             />
           </View>
         </View>
@@ -162,9 +164,14 @@ const styles = StyleSheet.create({
   rowContainer: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 0,
+    marginBottom: 16,
+    alignItems: 'stretch',
   },
   halfWidth: {
     flex: 1,
+  },
+  rowCard: {
+    flex: 1,
+    marginBottom: 0,
   },
 });

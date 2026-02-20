@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 
@@ -8,11 +8,12 @@ const colors = Colors.dark;
 interface DashboardCardProps {
   title?: string;
   children: ReactNode;
+  style?: StyleProp<ViewStyle>;
 }
 
-export function DashboardCard({ title, children }: DashboardCardProps) {
+export function DashboardCard({ title, children, style }: DashboardCardProps) {
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, style]}>
       {title && <Text style={styles.title}>{title}</Text>}
       <View style={styles.content}>{children}</View>
     </View>
@@ -34,5 +35,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 12,
   },
-  content: {},
+  content: {
+    flex: 1,
+  },
 });

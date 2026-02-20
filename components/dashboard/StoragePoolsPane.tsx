@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { DashboardCard } from './DashboardCard';
 import { Colors } from '@/constants/theme';
-import { Pool } from '@/services/api/types';
+import { Pool, PoolVdev } from '@/services/api/types';
 import { formatBytes } from '@/utils/format-bytes';
 
 const colors = Colors.dark;
@@ -18,6 +18,37 @@ const STATUS_COLORS: Record<string, string> = {
   OFFLINE: colors.textSecondary,
   FAULTED: colors.danger,
 };
+
+// Recursively count disks in vdev tree
+function countDisks(vdevs: PoolVdev[]): number {
+  let count = 0;
+  for (const vdev of vdevs) {
+    if (vdev.children && vdev.children.length > 0) {
+      // This is a vdev group (mirror, raidz, etc.) - count children
+      count += countDisks(vdev.children);
+    } else if (vdev.type === 'DISK' || vdev.disk) {
+      // This is an actual disk
+      count += 1;
+    }
+  }
+  return count;
+}
+
+// Recursively count disks with errors in vdev tree
+function countDisksWithErrors(vdevs: PoolVdev[]): number {
+  let count = 0;
+  for (const vdev of vdevs) {
+    if (vdev.children && vdev.children.length > 0) {
+      count += countDisksWithErrors(vdev.children);
+    } else if (vdev.type === 'DISK' || vdev.disk) {
+      const stats = vdev.stats;
+      if (stats && (stats.read_errors > 0 || stats.write_errors > 0 || stats.checksum_errors > 0)) {
+        count += 1;
+      }
+    }
+  }
+  return count;
+}
 
 export function StoragePoolsPane({ pools, isLoading }: StoragePoolsPaneProps) {
   if (isLoading && !pools) {
@@ -47,8 +78,21 @@ export function StoragePoolsPane({ pools, isLoading }: StoragePoolsPaneProps) {
           const statusColor = STATUS_COLORS[pool.status] ?? colors.textSecondary;
           const usedSpace = pool.allocated ?? 0;
           const totalSpace = pool.size ?? 0;
-          const diskCount = pool.topology?.data?.length ?? 0;
-          const scanErrors = pool.scan?.errors ?? 0;
+
+          // Count all disks across all vdev types
+          const dataDisks = countDisks(pool.topology?.data ?? []);
+          const cacheDisks = countDisks(pool.topology?.cache ?? []);
+          const logDisks = countDisks(pool.topology?.log ?? []);
+          const spareDisks = countDisks(pool.topology?.spare ?? []);
+          const totalDisks = dataDisks + cacheDisks + logDisks + spareDisks;
+
+          // Count disks with errors
+          const disksWithErrors =
+            countDisksWithErrors(pool.topology?.data ?? []) +
+            countDisksWithErrors(pool.topology?.cache ?? []) +
+            countDisksWithErrors(pool.topology?.log ?? []) +
+            countDisksWithErrors(pool.topology?.spare ?? []);
+
           const scrubState = pool.scan?.state ?? 'NONE';
 
           return (
@@ -62,7 +106,7 @@ export function StoragePoolsPane({ pools, isLoading }: StoragePoolsPaneProps) {
 
               <View style={styles.infoRow}>
                 <View style={styles.checkItem}>
-                  <View style={[styles.checkDot, { backgroundColor: '#22C55E' }]} />
+                  <View style={[styles.checkDot, { backgroundColor: statusColor }]} />
                   <Text style={styles.infoLabel}>Pool Status:</Text>
                   <Text style={styles.infoValue}>{pool.status}</Text>
                 </View>
@@ -73,7 +117,7 @@ export function StoragePoolsPane({ pools, isLoading }: StoragePoolsPaneProps) {
                   <View
                     style={[
                       styles.checkDot,
-                      { backgroundColor: usedSpace > 0 ? '#22C55E' : colors.textSecondary },
+                      { backgroundColor: '#22C55E' },
                     ]}
                   />
                   <Text style={styles.infoLabel}>Used Space:</Text>
@@ -88,12 +132,12 @@ export function StoragePoolsPane({ pools, isLoading }: StoragePoolsPaneProps) {
                   <View
                     style={[
                       styles.checkDot,
-                      { backgroundColor: scanErrors === 0 ? '#22C55E' : colors.danger },
+                      { backgroundColor: disksWithErrors === 0 ? '#22C55E' : colors.danger },
                     ]}
                   />
                   <Text style={styles.infoLabel}>Disks with Errors:</Text>
                   <Text style={styles.infoValue}>
-                    {scanErrors} of {diskCount}
+                    {disksWithErrors} of {totalDisks}
                   </Text>
                 </View>
               </View>

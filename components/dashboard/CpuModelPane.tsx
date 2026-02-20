@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 import { DashboardCard } from './DashboardCard';
 import { Colors } from '@/constants/theme';
@@ -8,13 +8,14 @@ const colors = Colors.dark;
 interface CpuModelPaneProps {
   cpuModel: string | null | undefined;
   isLoading: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
-export function CpuModelPane({ cpuModel, isLoading }: CpuModelPaneProps) {
+export function CpuModelPane({ cpuModel, isLoading, style }: CpuModelPaneProps) {
   if (isLoading && !cpuModel) {
     return (
-      <DashboardCard title="CPU Model">
-        <View style={styles.loadingContainer}>
+      <DashboardCard title="CPU Model" style={style}>
+        <View style={styles.container}>
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
       </DashboardCard>
@@ -22,7 +23,7 @@ export function CpuModelPane({ cpuModel, isLoading }: CpuModelPaneProps) {
   }
 
   return (
-    <DashboardCard title="CPU Model">
+    <DashboardCard title="CPU Model" style={style}>
       <View style={styles.container}>
         <Text style={styles.modelText}>{cpuModel ?? 'Unknown'}</Text>
       </View>
@@ -32,12 +33,10 @@ export function CpuModelPane({ cpuModel, isLoading }: CpuModelPaneProps) {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 8,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    paddingVertical: 24,
   },
   loadingText: {
     color: colors.textSecondary,

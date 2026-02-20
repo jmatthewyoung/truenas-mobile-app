@@ -63,17 +63,6 @@ export function CpuUsagePane({ data, isLoading }: CpuUsagePaneProps) {
     });
   }, [data]);
 
-  const avgUsage = useMemo(() => {
-    // Use API-provided average if available
-    if (data?.average && isCpuCore(data.average)) {
-      return calculateUsage(data.average);
-    }
-    // Fallback to calculating from cores
-    if (cores.length === 0) return 0;
-    const total = cores.reduce((sum, core) => sum + core.usage, 0);
-    return total / cores.length;
-  }, [data, cores]);
-
   if (isLoading && !data) {
     return (
       <DashboardCard title="CPU Usage">
@@ -85,14 +74,8 @@ export function CpuUsagePane({ data, isLoading }: CpuUsagePaneProps) {
   }
 
   return (
-    <DashboardCard title="CPU Usage">
+    <DashboardCard title="CPU Cores">
       <View style={styles.container}>
-        {/* Average usage header */}
-        <View style={styles.avgSection}>
-          <Text style={styles.avgLabel}>Average</Text>
-          <Text style={styles.avgValue}>{avgUsage.toFixed(1)}%</Text>
-        </View>
-
         {/* Core grid */}
         <View style={styles.coreGrid}>
           {cores.map((core) => (
@@ -141,23 +124,6 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.textSecondary,
     fontSize: 14,
-  },
-  avgSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  avgLabel: {
-    color: colors.textSecondary,
-    fontSize: 14,
-  },
-  avgValue: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '600',
   },
   coreGrid: {
     gap: 8,

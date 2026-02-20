@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { DashboardCard } from './DashboardCard';
@@ -24,32 +24,42 @@ export function NetworkInterfacePane({
   realtimeStats,
   isLoading,
 }: NetworkInterfacePaneProps) {
+  // Track traffic rates
+  const [trafficRates, setTrafficRates] = useState<Record<string, TrafficRate>>({});
+
   // Track previous byte counts to calculate rates
   const prevBytesRef = useRef<Record<string, { received: number; sent: number; timestamp: number }>>({});
 
-  // Calculate traffic rates from WebSocket data
-  const trafficRates = useMemo(() => {
-    const rates: Record<string, TrafficRate> = {};
-
+  // Calculate traffic rates when realtime data updates
+  useEffect(() => {
     if (!realtimeStats?.interfaces) {
-      return rates;
+      return;
     }
 
     const now = Date.now();
+    const newRates: Record<string, TrafficRate> = {};
 
     for (const [name, data] of Object.entries(realtimeStats.interfaces)) {
+      // Skip if data is invalid
+      if (typeof data.received_bytes !== 'number' || typeof data.sent_bytes !== 'number') {
+        continue;
+      }
+
       const prev = prevBytesRef.current[name];
 
-      if (prev) {
+      if (prev && prev.timestamp > 0) {
         const timeDelta = (now - prev.timestamp) / 1000; // seconds
-        if (timeDelta > 0) {
+        if (timeDelta > 0 && timeDelta < 10) { // Sanity check: ignore if delta > 10s
           const receivedDelta = data.received_bytes - prev.received;
           const sentDelta = data.sent_bytes - prev.sent;
 
-          rates[name] = {
-            inRate: Math.max(0, receivedDelta / timeDelta),
-            outRate: Math.max(0, sentDelta / timeDelta),
-          };
+          // Only set positive rates (bytes shouldn't decrease)
+          if (receivedDelta >= 0 && sentDelta >= 0) {
+            newRates[name] = {
+              inRate: receivedDelta / timeDelta,
+              outRate: sentDelta / timeDelta,
+            };
+          }
         }
       }
 
@@ -61,7 +71,10 @@ export function NetworkInterfacePane({
       };
     }
 
-    return rates;
+    // Only update state if we have rates
+    if (Object.keys(newRates).length > 0) {
+      setTrafficRates(newRates);
+    }
   }, [realtimeStats?.interfaces]);
 
   // Reset tracking when component unmounts
@@ -101,6 +114,14 @@ export function NetworkInterfacePane({
           const isUp = linkState === 'LINK_STATE_UP';
           const rate = trafficRates[iface.name];
 
+          // Format rates, ensuring we handle NaN/undefined
+          const formatRate = (value: number | undefined): string => {
+            if (value === undefined || !isFinite(value)) {
+              return '-- B/s';
+            }
+            return formatBytesPerSecond(value);
+          };
+
           return (
             <View key={iface.id} style={styles.interfaceCard}>
               <View style={styles.interfaceHeader}>
@@ -124,13 +145,13 @@ export function NetworkInterfacePane({
                 <View style={styles.trafficItem}>
                   <Text style={styles.trafficLabel}>In:</Text>
                   <Text style={styles.trafficValue}>
-                    {rate ? formatBytesPerSecond(rate.inRate) : '-- B/s'}
+                    {formatRate(rate?.inRate)}
                   </Text>
                 </View>
                 <View style={styles.trafficItem}>
                   <Text style={styles.trafficLabel}>Out:</Text>
                   <Text style={styles.trafficValue}>
-                    {rate ? formatBytesPerSecond(rate.outRate) : '-- B/s'}
+                    {formatRate(rate?.outRate)}
                   </Text>
                 </View>
               </View>

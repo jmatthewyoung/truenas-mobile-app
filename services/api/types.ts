@@ -42,6 +42,20 @@ export interface NetworkInterface {
   }>;
 }
 
+export interface PoolVdev {
+  type: string;
+  path?: string;
+  guid: string;
+  status: string;
+  stats: {
+    read_errors: number;
+    write_errors: number;
+    checksum_errors: number;
+  };
+  children: PoolVdev[];
+  disk?: string;
+}
+
 export interface Pool {
   id: number;
   name: string;
@@ -56,7 +70,12 @@ export interface Pool {
     errors: number;
   } | null;
   topology: {
-    data: Array<{ disk: string }>;
+    data: PoolVdev[];
+    cache: PoolVdev[];
+    log: PoolVdev[];
+    spare: PoolVdev[];
+    special: PoolVdev[];
+    dedup: PoolVdev[];
   };
 }
 
