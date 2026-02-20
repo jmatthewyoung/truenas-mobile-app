@@ -89,10 +89,10 @@ export interface RealtimeStats {
     write_ops?: number;
   };
   interfaces: Record<string, {
-    received_bytes: number;
-    received_bytes_last: number;
-    sent_bytes: number;
-    sent_bytes_last: number;
+    link_state: string;
+    speed: number;
+    received_bytes_rate: number;
+    sent_bytes_rate: number;
   }>;
   memory: {
     classes: {

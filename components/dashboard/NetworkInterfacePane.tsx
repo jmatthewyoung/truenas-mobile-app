@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { DashboardCard } from './DashboardCard';
@@ -14,77 +14,67 @@ interface NetworkInterfacePaneProps {
   isLoading: boolean;
 }
 
-interface TrafficRate {
-  inRate: number;
-  outRate: number;
-}
-
 export function NetworkInterfacePane({
   interfaces,
   realtimeStats,
   isLoading,
 }: NetworkInterfacePaneProps) {
-  // Track traffic rates
-  const [trafficRates, setTrafficRates] = useState<Record<string, TrafficRate>>({});
+  // Merge REST API interface data with WebSocket realtime data
+  const mergedInterfaces = useMemo(() => {
+    const wsInterfaces = realtimeStats?.interfaces ?? {};
+    const restInterfaces = interfaces ?? [];
 
-  // Track previous byte counts to calculate rates
-  const prevBytesRef = useRef<Record<string, { received: number; sent: number; timestamp: number }>>({});
+    // Create a map of REST interfaces by name for quick lookup
+    const restByName = new Map(restInterfaces.map((i) => [i.name, i]));
 
-  // Calculate traffic rates when realtime data updates
-  useEffect(() => {
-    if (!realtimeStats?.interfaces) {
-      return;
+    // Build merged list - prefer REST interfaces but add WebSocket-only ones
+    const result: Array<{
+      id: string;
+      name: string;
+      ipAddress: string;
+      linkState: string;
+      inRate: number;
+      outRate: number;
+    }> = [];
+
+    // First, add all REST interfaces with their WebSocket data
+    for (const iface of restInterfaces) {
+      const wsData = wsInterfaces[iface.name];
+      const ipv4Alias = iface.aliases.find((a) => a.type === 'INET');
+
+      result.push({
+        id: iface.id,
+        name: iface.name,
+        ipAddress: ipv4Alias?.address ?? 'No IP',
+        // Prefer WebSocket link_state (real-time) over REST (static)
+        linkState: wsData?.link_state ?? iface.state?.link_state ?? 'UNKNOWN',
+        // WebSocket provides rates directly
+        inRate: wsData?.received_bytes_rate ?? 0,
+        outRate: wsData?.sent_bytes_rate ?? 0,
+      });
     }
 
-    const now = Date.now();
-    const newRates: Record<string, TrafficRate> = {};
+    // Add any WebSocket-only interfaces (not in REST data)
+    for (const [name, wsData] of Object.entries(wsInterfaces)) {
+      if (!restByName.has(name)) {
+        // Skip loopback
+        if (name === 'lo0' || name === 'lo') continue;
 
-    for (const [name, data] of Object.entries(realtimeStats.interfaces)) {
-      // Skip if data is invalid
-      if (typeof data.received_bytes !== 'number' || typeof data.sent_bytes !== 'number') {
-        continue;
+        result.push({
+          id: name,
+          name,
+          ipAddress: 'N/A',
+          linkState: wsData.link_state ?? 'UNKNOWN',
+          inRate: wsData.received_bytes_rate ?? 0,
+          outRate: wsData.sent_bytes_rate ?? 0,
+        });
       }
-
-      const prev = prevBytesRef.current[name];
-
-      if (prev && prev.timestamp > 0) {
-        const timeDelta = (now - prev.timestamp) / 1000; // seconds
-        if (timeDelta > 0 && timeDelta < 10) { // Sanity check: ignore if delta > 10s
-          const receivedDelta = data.received_bytes - prev.received;
-          const sentDelta = data.sent_bytes - prev.sent;
-
-          // Only set positive rates (bytes shouldn't decrease)
-          if (receivedDelta >= 0 && sentDelta >= 0) {
-            newRates[name] = {
-              inRate: receivedDelta / timeDelta,
-              outRate: sentDelta / timeDelta,
-            };
-          }
-        }
-      }
-
-      // Update previous values
-      prevBytesRef.current[name] = {
-        received: data.received_bytes,
-        sent: data.sent_bytes,
-        timestamp: now,
-      };
     }
 
-    // Only update state if we have rates
-    if (Object.keys(newRates).length > 0) {
-      setTrafficRates(newRates);
-    }
-  }, [realtimeStats?.interfaces]);
+    return result;
+  }, [interfaces, realtimeStats?.interfaces]);
 
-  // Reset tracking when component unmounts
-  useEffect(() => {
-    return () => {
-      prevBytesRef.current = {};
-    };
-  }, []);
-
-  if (isLoading && !interfaces) {
+  if (isLoading && !interfaces && !realtimeStats) {
     return (
       <DashboardCard title="Network">
         <View style={styles.loadingContainer}>
@@ -94,7 +84,7 @@ export function NetworkInterfacePane({
     );
   }
 
-  if (!interfaces || interfaces.length === 0) {
+  if (mergedInterfaces.length === 0) {
     return (
       <DashboardCard title="Network">
         <View style={styles.loadingContainer}>
@@ -107,20 +97,8 @@ export function NetworkInterfacePane({
   return (
     <DashboardCard title="Network">
       <View style={styles.container}>
-        {interfaces.map((iface) => {
-          const ipv4Alias = iface.aliases.find((a) => a.type === 'INET');
-          const ipAddress = ipv4Alias?.address ?? 'No IP';
-          const linkState = iface.state?.link_state ?? 'UNKNOWN';
-          const isUp = linkState === 'LINK_STATE_UP';
-          const rate = trafficRates[iface.name];
-
-          // Format rates, ensuring we handle NaN/undefined
-          const formatRate = (value: number | undefined): string => {
-            if (value === undefined || !isFinite(value)) {
-              return '-- B/s';
-            }
-            return formatBytesPerSecond(value);
-          };
+        {mergedInterfaces.map((iface) => {
+          const isUp = iface.linkState === 'LINK_STATE_UP';
 
           return (
             <View key={iface.id} style={styles.interfaceCard}>
@@ -130,28 +108,28 @@ export function NetworkInterfacePane({
                   <View
                     style={[
                       styles.linkStateDot,
-                      { backgroundColor: isUp ? '#22C55E' : colors.danger },
+                      { backgroundColor: isUp ? '#22C55E' : iface.linkState === 'UNKNOWN' ? colors.textSecondary : colors.danger },
                     ]}
                   />
                   <Text style={styles.linkStateText}>
-                    {isUp ? 'UP' : 'DOWN'}
+                    {isUp ? 'UP' : iface.linkState === 'UNKNOWN' ? '—' : 'DOWN'}
                   </Text>
                 </View>
               </View>
 
-              <Text style={styles.ipAddress}>{ipAddress}</Text>
+              <Text style={styles.ipAddress}>{iface.ipAddress}</Text>
 
               <View style={styles.trafficRow}>
                 <View style={styles.trafficItem}>
                   <Text style={styles.trafficLabel}>In:</Text>
                   <Text style={styles.trafficValue}>
-                    {formatRate(rate?.inRate)}
+                    {formatBytesPerSecond(iface.inRate)}
                   </Text>
                 </View>
                 <View style={styles.trafficItem}>
                   <Text style={styles.trafficLabel}>Out:</Text>
                   <Text style={styles.trafficValue}>
-                    {formatRate(rate?.outRate)}
+                    {formatBytesPerSecond(iface.outRate)}
                   </Text>
                 </View>
               </View>
