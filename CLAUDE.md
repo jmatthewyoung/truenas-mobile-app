@@ -60,6 +60,14 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 - **@expo/vector-icons** - Icon library
 - **expo-image** - Optimized image component
 
+## Design Reference
+
+`screenshots/` contains TrueNAS Scale UI screenshots to use as visual reference when building screens. Review these when designing new UI to match the TrueNAS aesthetic: dark navy backgrounds, electric cyan (`#0099FF`) accent, subtle card borders, and high-contrast text.
+
+## API Reference
+
+`referencedocs/` contains the TrueNAS Scale 24.10.2.3 API reference documentation. Consult these when implementing API calls to understand available endpoints, request/response shapes, and authentication requirements.
+
 ## Configuration Notes
 
 - New Architecture (Fabric) is enabled
